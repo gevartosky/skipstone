@@ -1349,6 +1349,42 @@ final class BridgeToKotlinTests: XCTestCase {
         """, transformers: transformers)
     }
 
+    func testSendableClosureFunction() async throws {
+        try await check(swiftBridge: """
+        public func f(c: @Sendable (Int) -> Void) -> Int? {
+            return nil
+        }
+        """, kotlin: """
+        fun f(c: (Int) -> Unit): Int? = Swift_f_0(c)
+        private external fun Swift_f_0(c: (Int) -> Unit): Int?
+        """, swiftBridgeSupport: """
+        @_cdecl("Java_BridgeKt_Swift_1f_10")
+        public func BridgeKt_Swift_f_0(_ Java_env: JNIEnvPointer, _ Java_target: JavaObjectPointer, _ p_0: JavaObjectPointer) -> JavaObjectPointer? {
+            let p_0_swift = SwiftClosure1.closure(forJavaObject: p_0, options: [])! as @Sendable (Int) -> Void
+            let f_return_swift = f(c: p_0_swift)
+            return f_return_swift.toJavaObject(options: [])
+        }
+        """, transformers: transformers)
+    }
+
+    func testSendableMainActorClosureFunction() async throws {
+        try await check(swiftBridge: """
+        public func f(c: @Sendable @MainActor (Int) -> Void) -> Int? {
+            return nil
+        }
+        """, kotlin: """
+        fun f(c: (Int) -> Unit): Int? = Swift_f_0(c)
+        private external fun Swift_f_0(c: (Int) -> Unit): Int?
+        """, swiftBridgeSupport: """
+        @_cdecl("Java_BridgeKt_Swift_1f_10")
+        public func BridgeKt_Swift_f_0(_ Java_env: JNIEnvPointer, _ Java_target: JavaObjectPointer, _ p_0: JavaObjectPointer) -> JavaObjectPointer? {
+            let p_0_swift = SwiftClosure1.closure(forJavaObject: p_0, options: [])! as @Sendable @MainActor (Int) -> Void
+            let f_return_swift = f(c: p_0_swift)
+            return f_return_swift.toJavaObject(options: [])
+        }
+        """, transformers: transformers)
+    }
+
     func testNestedClosureFunction() async throws {
         // A function-typed parameter whose own parameter is itself a function type. The bridge
         // emits explicit per-parameter conversions via `invokeJava:` so each value is converted
